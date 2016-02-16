@@ -19,6 +19,9 @@ app.post('/test', function(req, res) {
 	if (orderText != undefined && orderText.trim().length != 0) {
 		var tokens = orderText.split(new RegExp(separators.join('|'))).filter(function(token) {
 			return (token.trim().length != 0);
+		}).map(function(token) {
+			amount = conf.amounts[token];
+			return amount ? amount : token;
 		});
 		var tokenTypes = tokens.map(function categorize(token) {
 			var tokenType = {};
@@ -32,7 +35,22 @@ app.post('/test', function(req, res) {
 			tokenType.val = token;
 			return tokenType;
 		});
-		res.send(JSON.stringify(tokenTypes));	
+		var prevOrderLine;
+		var orderLines = [];
+		var orderLine = {};
+		tokenTypes.forEach(function(token) {
+			if (token.type === "amount") {
+				orderLine.amount = token.val;
+			} else if (token.type === "productName") {
+				orderLine.product = token.val;
+			}
+			if (orderLine.amount && orderLine.product) {
+				orderLines.push(orderLine);
+				orderLine = {}
+			}
+		});
+		
+		res.send(JSON.stringify(orderLines));	
 	} else {
 		res.send('No order was sent');
 	}
